@@ -1,2 +1,1 @@
-# PythonTest_WEB
-Project for Yandex number 3. Website
+Онлайн-платформа для решения задач по программированию на языке Python.
