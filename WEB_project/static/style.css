@@ -1,22 +1,44 @@
-body {
-    padding-top: 20px;
-    background-color: #f8f9fa;
+/* Profile page styles */
+.profile-icon {
+    color: #6c757d;
 }
 
+.progress {
+    background-color: #e9ecef;
+}
+
+.progress-bar {
+    transition: width 0.6s ease;
+}
+
+/* Form styles */
+.form-control:focus {
+    border-color: #86b7fe;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+
+/* Card styles */
 .card {
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    transition: transform 0.2s;
+    border-radius: 10px;
+    overflow: hidden;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
 .card:hover {
     transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
 }
 
-.navbar-dark {
-    background-color: #343a40 !important;
+/* Difficulty badges */
+.badge.bg-success {
+    background-color: #28a745 !important;
 }
 
-textarea.form-control {
-    font-family: monospace;
-    font-size: 14px;
+.badge.bg-warning {
+    background-color: #ffc107 !important;
+    color: #212529;
+}
+
+.badge.bg-danger {
+    background-color: #dc3545 !important;
 }
