@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <div class="card mb-4">
+            <div class="card-body">
+                <span class="badge bg-{% if task.difficulty == 'Easy' %}success{% elif task.difficulty == 'Medium' %}warning{% else %}danger{% endif %} mb-2">
+                    {{ task.difficulty }}
+                </span>
+                <h2 class="card-title">{{ task.title }}</h2>
+                <p class="card-text">{{ task.description }}</p>
+                
+                <h4 class="mt-4">Example Test Cases:</h4>
+                <ul>
+                    {% for case in task.test_cases %}
+                    <li>Input: <code>{{ case.input }}</code> → Output: <code>{{ case.output }}</code></li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body">
+                <h4 class="card-title">Submit Your Solution</h4>
+                <form method="POST" action="{{ url_for('submit_solution', task_id=task.id) }}">
+                    <div class="mb-3">
+                        <textarea class="form-control" name="code" rows="10" placeholder="Write your Python code here"></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Submit Solution</button>
+                </form>
+                
+                {% if completed %}
+                <div class="alert alert-success mt-3">
+                    <i class="bi bi-check-circle"></i> You've completed this challenge!
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

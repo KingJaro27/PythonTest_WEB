@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Aufgabe</h1>
+<p>{{ aufgabe.frage }}</p>
+<form method="POST">
+    <div class="mb-3">
+        <label for="loesung" class="form-label">Deine Lösung:</label>
+        <input type="text" class="form-control" id="loesung" name="loesung" required>
+    </div>
+    <button type="submit" class="btn btn-primary">Prüfen</button>
+</form>
+{% endblock %}
