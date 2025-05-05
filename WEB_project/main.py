@@ -142,8 +142,6 @@ if not os.path.exists(app.config["DATABASE"]):
 def index():
     db = get_db()
     cursor = db.cursor()
-
-    # Fetch tasks as a list of dictionaries
     cursor.execute("SELECT * FROM tasks")
     tasks = [dict(row) for row in cursor.fetchall()]
 
@@ -239,11 +237,11 @@ def profile():
     cursor.execute("SELECT * FROM users WHERE id = ?", (session["user_id"],))
     user = cursor.fetchone()
 
-    cursor.execute(
-        """
-        SELECT COUNT(*) as total_tasks FROM tasks
-    """
-    )
+    if not user:
+        flash("User not found", "danger")
+        return redirect(url_for("index"))
+
+    cursor.execute("SELECT COUNT(*) as total_tasks FROM tasks")
     total_tasks = cursor.fetchone()["total_tasks"]
 
     cursor.execute(
@@ -270,10 +268,12 @@ def profile():
 
     return render_template(
         "profile.html",
-        user=user,
+        user=dict(user), 
         total_tasks=total_tasks,
         completed_tasks=completed_tasks,
         recent_tasks=recent_tasks,
+        logged_in=True,
+        username=session.get("username"),
     )
 
 
