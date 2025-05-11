@@ -1,79 +1,62 @@
 from flask import Flask, render_template, request, redirect, url_for, session, flash, g
-import sqlite3
-import os
+from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
+from datetime import datetime
 from tester import TestingSystem, TestCase
+import os
 
 app = Flask(__name__)
 app.secret_key = "9515d755178ad60074008112b4f06acf74e810389559766c047f53f189718679"
-app.config["DATABASE"] = "database.db"
+app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///database.db"
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+
+db = SQLAlchemy(app)
 
 
-def get_db():
-    db = getattr(g, "_database", None)
-    if db is None:
-        db = g._database = sqlite3.connect(app.config["DATABASE"])
-        db.row_factory = sqlite3.Row
-    return db
+# Database Models
+class User(db.Model):
+    __tablename__ = "users"
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(80), unique=True, nullable=False)
+    password_hash = db.Column(db.String(120), nullable=False)
+    email = db.Column(db.String(120))
+    join_date = db.Column(db.DateTime, default=datetime.utcnow)
+    progress = db.relationship("UserProgress", backref="user", lazy=True)
 
 
+class Task(db.Model):
+    __tablename__ = "tasks"
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(120), nullable=False)
+    description = db.Column(db.Text, nullable=False)
+    difficulty = db.Column(db.String(50), nullable=False)
+    solution = db.Column(db.Text, nullable=False)
+    test_cases = db.relationship("TestCase", backref="task", lazy=True)
+    user_progress = db.relationship("UserProgress", backref="task", lazy=True)
+
+
+class TestCase(db.Model):
+    __tablename__ = "test_cases"
+    id = db.Column(db.Integer, primary_key=True)
+    task_id = db.Column(db.Integer, db.ForeignKey("tasks.id"), nullable=False)
+    input = db.Column(db.Text, nullable=False)
+    output = db.Column(db.Text, nullable=False)
+
+
+class UserProgress(db.Model):
+    __tablename__ = "user_progress"
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), primary_key=True)
+    task_id = db.Column(db.Integer, db.ForeignKey("tasks.id"), primary_key=True)
+    completed = db.Column(db.Boolean, default=False)
+    completion_date = db.Column(db.DateTime)
+
+
+# Create tables and sample data
 def init_db():
     with app.app_context():
-        db = get_db()
-        cursor = db.cursor()
+        db.create_all()
 
-        cursor.execute(
-            """
-            CREATE TABLE IF NOT EXISTS users (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                username TEXT UNIQUE NOT NULL,
-                password_hash TEXT NOT NULL,
-                email TEXT,
-                join_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        """
-        )
-
-        cursor.execute(
-            """
-            CREATE TABLE IF NOT EXISTS tasks (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                title TEXT NOT NULL,
-                description TEXT NOT NULL,
-                difficulty TEXT NOT NULL,
-                solution TEXT NOT NULL
-            )
-        """
-        )
-
-        cursor.execute(
-            """
-            CREATE TABLE IF NOT EXISTS test_cases (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                task_id INTEGER,
-                input TEXT NOT NULL,
-                output TEXT NOT NULL,
-                FOREIGN KEY(task_id) REFERENCES tasks(id)
-            )
-        """
-        )
-
-        cursor.execute(
-            """
-            CREATE TABLE IF NOT EXISTS user_progress (
-                user_id INTEGER,
-                task_id INTEGER,
-                completed BOOLEAN DEFAULT 0,
-                completion_date TIMESTAMP,
-                PRIMARY KEY(user_id, task_id),
-                FOREIGN KEY(user_id) REFERENCES users(id),
-                FOREIGN KEY(task_id) REFERENCES tasks(id)
-            )
-        """
-        )
-
-        cursor.execute("SELECT COUNT(*) FROM tasks")
-        if cursor.fetchone()[0] == 0:
+        if Task.query.count() == 0:
             sample_tasks = [
                 {
                     "title": "Sum Two Numbers",
@@ -107,53 +90,38 @@ def init_db():
                 },
             ]
 
-            for task in sample_tasks:
-                cursor.execute(
-                    "INSERT INTO tasks (title, description, difficulty, solution) VALUES (?, ?, ?, ?)",
-                    (
-                        task["title"],
-                        task["description"],
-                        task["difficulty"],
-                        task["solution"],
-                    ),
+            for task_data in sample_tasks:
+                task = Task(
+                    title=task_data["title"],
+                    description=task_data["description"],
+                    difficulty=task_data["difficulty"],
+                    solution=task_data["solution"],
                 )
-                task_id = cursor.lastrowid
+                db.session.add(task)
+                db.session.flush()  # To get the task.id
 
-                for case in task["test_cases"]:
-                    cursor.execute(
-                        "INSERT INTO test_cases (task_id, input, output) VALUES (?, ?, ?)",
-                        (task_id, case["input"], case["output"]),
+                for case in task_data["test_cases"]:
+                    test_case = TestCase(
+                        task_id=task.id, input=case["input"], output=case["output"]
                     )
+                    db.session.add(test_case)
 
-        db.commit()
-
-
-@app.teardown_appcontext
-def close_connection(exception):
-    db = getattr(g, "_database", None)
-    if db is not None:
-        db.close()
+            db.session.commit()
 
 
-if not os.path.exists(app.config["DATABASE"]):
+if not os.path.exists("instance/database.db"):
     init_db()
 
 
 @app.route("/")
 def index():
-    db = get_db()
-    cursor = db.cursor()
-    cursor.execute("SELECT * FROM tasks")
-    tasks = [dict(row) for row in cursor.fetchall()]
-
+    tasks = Task.query.all()
     completed_tasks = []
     if "user_id" in session:
-        cursor.execute(
-            "SELECT task_id FROM user_progress WHERE user_id = ? AND completed = 1",
-            (session["user_id"],),
-        )
-        completed_tasks = [row["task_id"] for row in cursor.fetchall()]
-
+        completed_progress = UserProgress.query.filter_by(
+            user_id=session["user_id"], completed=True
+        ).all()
+        completed_tasks = [progress.task_id for progress in completed_progress]
     return render_template(
         "index.html",
         logged_in="user_id" in session,
@@ -169,32 +137,28 @@ def register():
         username = request.form["username"]
         password = request.form["password"]
         email = request.form.get("email", "")
-
-        db = get_db()
-        cursor = db.cursor()
-
+        if User.query.filter_by(username=username).first():
+            flash("Username already taken", "danger")
+            return redirect(url_for("register"))
         try:
-            cursor.execute(
-                "INSERT INTO users (username, password_hash, email) VALUES (?, ?, ?)",
-                (username, generate_password_hash(password), email),
+            new_user = User(
+                username=username,
+                password_hash=generate_password_hash(password),
+                email=email,
             )
-            db.commit()
-
-            cursor.execute("SELECT id FROM tasks")
-            task_ids = [row[0] for row in cursor.fetchall()]
-
-            for task_id in task_ids:
-                cursor.execute(
-                    "INSERT INTO user_progress (user_id, task_id) VALUES (?, ?)",
-                    (cursor.lastrowid, task_id),
-                )
-            db.commit()
-
+            db.session.add(new_user)
+            db.session.flush()  # To get the new_user.id
+            # Initialize progress for all tasks
+            tasks = Task.query.all()
+            for task in tasks:
+                progress = UserProgress(user_id=new_user.id, task_id=task.id)
+                db.session.add(progress)
+            db.session.commit()
             flash("Registration successful! Please login.", "success")
             return redirect(url_for("login"))
-        except sqlite3.IntegrityError:
-            flash("Username already taken", "danger")
-
+        except Exception as e:
+            db.session.rollback()
+            flash("An error occurred during registration", "danger")
     return render_template("register.html")
 
 
@@ -204,16 +168,14 @@ def login():
         username = request.form["username"]
         password = request.form["password"]
 
-        db = get_db()
-        cursor = db.cursor()
-        cursor.execute("SELECT * FROM users WHERE username = ?", (username,))
-        user = cursor.fetchone()
+        user = User.query.filter_by(username=username).first()
 
-        if user and check_password_hash(user["password_hash"], password):
-            session["user_id"] = user["id"]
-            session["username"] = user["username"]
+        if user and check_password_hash(user.password_hash, password):
+            session["user_id"] = user.id
+            session["username"] = user.username
             flash("Logged in successfully!", "success")
             return redirect(url_for("index"))
+
         flash("Invalid username or password", "danger")
     return render_template("login.html")
 
@@ -232,44 +194,32 @@ def profile():
         flash("Please login to view your profile", "danger")
         return redirect(url_for("login"))
 
-    db = get_db()
-    cursor = db.cursor()
-
-    cursor.execute("SELECT * FROM users WHERE id = ?", (session["user_id"],))
-    user = cursor.fetchone()
-
+    user = User.query.get(session["user_id"])
     if not user:
         flash("User not found", "danger")
         return redirect(url_for("index"))
 
-    cursor.execute("SELECT COUNT(*) as total_tasks FROM tasks")
-    total_tasks = cursor.fetchone()["total_tasks"]
+    total_tasks = Task.query.count()
+    completed_tasks = UserProgress.query.filter_by(
+        user_id=session["user_id"], completed=True
+    ).count()
 
-    cursor.execute(
-        """
-        SELECT COUNT(*) as completed_tasks FROM user_progress
-        WHERE user_id = ? AND completed = 1
-    """,
-        (session["user_id"],),
+    recent_tasks = (
+        db.session.query(
+            Task.id, Task.title, Task.difficulty, UserProgress.completion_date
+        )
+        .join(UserProgress, Task.id == UserProgress.task_id)
+        .filter(
+            UserProgress.user_id == session["user_id"], UserProgress.completed == True
+        )
+        .order_by(UserProgress.completion_date.desc())
+        .limit(5)
+        .all()
     )
-    completed_tasks = cursor.fetchone()["completed_tasks"]
-
-    cursor.execute(
-        """
-        SELECT t.id, t.title, t.difficulty, up.completion_date
-        FROM tasks t
-        JOIN user_progress up ON t.id = up.task_id
-        WHERE up.user_id = ? AND up.completed = 1
-        ORDER BY up.completion_date DESC
-        LIMIT 5
-    """,
-        (session["user_id"],),
-    )
-    recent_tasks = cursor.fetchall()
 
     return render_template(
         "profile.html",
-        user=dict(user),
+        user=user,
         total_tasks=total_tasks,
         completed_tasks=completed_tasks,
         recent_tasks=recent_tasks,
@@ -280,30 +230,15 @@ def profile():
 
 @app.route("/task/<int:task_id>")
 def view_task(task_id):
-    db = get_db()
-    cursor = db.cursor()
-
-    cursor.execute("SELECT * FROM tasks WHERE id = ?", (task_id,))
-    task = cursor.fetchone()
-
-    if not task:
-        flash("Task not found", "danger")
-        return redirect(url_for("index"))
-
-    cursor.execute("SELECT * FROM test_cases WHERE task_id = ?", (task_id,))
-    test_cases = cursor.fetchall()
+    task = Task.query.get_or_404(task_id)
+    test_cases = TestCase.query.filter_by(task_id=task_id).all()
 
     completed = False
     if "user_id" in session:
-        cursor.execute(
-            """
-            SELECT completed FROM user_progress
-            WHERE user_id = ? AND task_id = ?
-        """,
-            (session["user_id"], task_id),
-        )
-        progress = cursor.fetchone()
-        completed = progress["completed"] if progress else False
+        progress = UserProgress.query.filter_by(
+            user_id=session["user_id"], task_id=task_id
+        ).first()
+        completed = progress.completed if progress else False
 
     return render_template(
         "task.html",
@@ -320,19 +255,8 @@ def submit_solution(task_id):
         flash("Please login to submit solutions", "danger")
         return redirect(url_for("login"))
 
-    db = get_db()
-    cursor = db.cursor()
-
-    cursor.execute("SELECT * FROM tasks WHERE id = ?", (task_id,))
-    task = cursor.fetchone()
-
-    if not task:
-        flash("Task not found", "danger")
-        return redirect(url_for("index"))
-
-
-    cursor.execute("SELECT * FROM test_cases WHERE task_id = ?", (task_id,))
-    test_cases = cursor.fetchall()
+    task = Task.query.get_or_404(task_id)
+    test_cases = TestCase.query.filter_by(task_id=task_id).all()
 
     user_code = request.form["code"]
     temp_file = f"user_solution_{session['user_id']}.py"
@@ -341,23 +265,21 @@ def submit_solution(task_id):
 
     tester = TestingSystem()
     for case in test_cases:
-        tester.add_test_case(case["input"], case["output"])
+        tester.add_test_case(case.input, case.output)
 
     all_passed = tester.run_tests(temp_file)
-
     os.remove(temp_file)
 
     if all_passed:
-        # Обновляем прогресс пользователя
-        cursor.execute(
-            """
-            UPDATE user_progress
-            SET completed = 1, completion_date = CURRENT_TIMESTAMP
-            WHERE user_id = ? AND task_id = ?
-            """,
-            (session["user_id"], task_id),
-        )
-        db.commit()
+        progress = UserProgress.query.filter_by(
+            user_id=session["user_id"], task_id=task_id
+        ).first()
+
+        if progress:
+            progress.completed = True
+            progress.completion_date = datetime.utcnow()
+            db.session.commit()
+
         flash("All tests passed! Solution accepted.", "success")
     else:
         flash("Some tests failed. Check your solution.", "danger")
