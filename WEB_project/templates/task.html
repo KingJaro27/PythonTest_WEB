@@ -5,32 +5,73 @@
     <div class="col-md-8">
         <div class="card mb-4">
             <div class="card-body">
-                <span class="badge bg-{% if task.difficulty == 'Easy' %}success{% elif task.difficulty == 'Medium' %}warning{% else %}danger{% endif %} mb-2">
-                    {{ task.difficulty }}
-                </span>
                 <h2 class="card-title">{{ task.title }}</h2>
                 <p class="card-text">{{ task.description }}</p>
                 
                 <h4 class="mt-4">Example Test Cases:</h4>
                 <ul>
-                    {% for case in task.test_cases %}
+                    {% for case in test_cases %}
                     <li>Input: <code>{{ case.input }}</code> → Output: <code>{{ case.output }}</code></li>
                     {% endfor %}
                 </ul>
             </div>
         </div>
+        
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <h4>Test Results</h4>
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ 'success' if category == 'success' else 'danger' }}">
+                                {{ message | replace('\n', '<br>') | safe }}
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endif %}
+        {% endwith %}
     </div>
     
     <div class="col-md-4">
         <div class="card">
             <div class="card-body">
                 <h4 class="card-title">Submit Your Solution</h4>
-                <form method="POST" action="{{ url_for('submit_solution', task_id=task.id) }}">
-                    <div class="mb-3">
-                        <textarea class="form-control" name="code" rows="10" placeholder="Write your Python code here"></textarea>
+                
+                <!-- Tab navigation -->
+                <ul class="nav nav-tabs mb-3" id="solutionTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="code-tab" data-bs-toggle="tab" data-bs-target="#code" type="button" role="tab">Write Code</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="upload-tab" data-bs-toggle="tab" data-bs-target="#upload" type="button" role="tab">Upload File</button>
+                    </li>
+                </ul>
+                
+                <!-- Tab content -->
+                <div class="tab-content" id="solutionTabsContent">
+                    <!-- Textarea for direct code input -->
+                    <div class="tab-pane fade show active" id="code" role="tabpanel">
+                        <form method="POST" action="{{ url_for('submit_solution', task_id=task.id) }}">
+                            <div class="mb-3">
+                                <textarea class="form-control" name="code" rows="10" 
+                                          placeholder="Write your Python code here" required></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Submit Solution</button>
+                        </form>
                     </div>
-                    <button type="submit" class="btn btn-primary">Submit Solution</button>
-                </form>
+                    
+                    <!-- File upload option -->
+                    <div class="tab-pane fade" id="upload" role="tabpanel">
+                        <form method="POST" action="{{ url_for('submit_solution', task_id=task.id) }}" enctype="multipart/form-data">
+                            <div class="mb-3">
+                                <label for="pythonFile" class="form-label">Upload Python File (.py)</label>
+                                <input class="form-control" type="file" id="pythonFile" name="pythonFile" accept=".py" required>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Upload and Submit</button>
+                        </form>
+                    </div>
+                </div>
                 
                 {% if completed %}
                 <div class="alert alert-success mt-3">

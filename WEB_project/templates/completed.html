@@ -3,13 +3,12 @@
 {% block content %}
 <div class="row mb-4">
     <div class="col">
-        <h2>Practice Python Programming</h2>
-        <p class="lead">Improve your Python skills by solving coding challenges.</p>
+        <h2>Your Completed Tasks</h2>
         
         {% if current_difficulty %}
         <div class="alert alert-info">
-            Showing tasks with difficulty: <strong>{{ current_difficulty }}</strong>
-            <a href="{{ url_for('index') }}" class="btn btn-sm btn-outline-secondary ms-2">Clear filter</a>
+            Showing completed tasks with difficulty: <strong>{{ current_difficulty }}</strong>
+            <a href="{{ url_for('completed_tasks') }}" class="btn btn-sm btn-outline-secondary ms-2">Clear filter</a>
         </div>
         {% endif %}
     </div>
@@ -25,11 +24,15 @@
                 </span>
                 <h5 class="card-title">{{ task.title }}</h5>
                 <p class="card-text">{{ task.description }}</p>
-                <a href="{{ url_for('view_task', task_id=task.id) }}" class="btn btn-primary">Solve Challenge</a>
-                {% if logged_in and task.id in completed_tasks %}
-                    <span class="badge bg-success ms-2"><i class="bi bi-check-circle"></i> Completed</span>
-                {% endif %}
+                <a href="{{ url_for('view_task', task_id=task.id) }}" class="btn btn-primary">View Challenge</a>
+                <span class="badge bg-success ms-2"><i class="bi bi-check-circle"></i> Completed</span>
             </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="col-12">
+        <div class="alert alert-warning">
+            You haven't completed any tasks yet. Start coding!
         </div>
     </div>
     {% endfor %}

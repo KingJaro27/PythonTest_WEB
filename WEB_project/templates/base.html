@@ -40,17 +40,19 @@
                         </li>
                         {% if logged_in %}
                         <li class="nav-item">
-                            <a class="nav-link" href="#">Completed Tasks</a>
+                            <a class="nav-link" href="{{ url_for('completed_tasks') }}">Completed Tasks</a>
                         </li>
                         {% endif %}
+                        <!-- In your navbar section -->
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle" href="#" id="difficultyDropdown" role="button" data-bs-toggle="dropdown">
                                 Difficulty
                             </a>
                             <ul class="dropdown-menu">
-                                <li><a class="dropdown-item" href="#">Easy</a></li>
-                                <li><a class="dropdown-item" href="#">Medium</a></li>
-                                <li><a class="dropdown-item" href="#">Hard</a></li>
+                                <li><a class="dropdown-item" href="{{ url_for('index') }}">All Difficulties</a></li>
+                                <li><a class="dropdown-item" href="{{ url_for('index', difficulty='Easy') }}">Easy</a></li>
+                                <li><a class="dropdown-item" href="{{ url_for('index', difficulty='Medium') }}">Medium</a></li>
+                                <li><a class="dropdown-item" href="{{ url_for('index', difficulty='Hard') }}">Hard</a></li>
                             </ul>
                         </li>
                     </ul>

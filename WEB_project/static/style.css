@@ -78,3 +78,67 @@ body {
     padding-left: 15px;
     padding-right: 15px;
 }
+/* Tab styles */
+.nav-tabs {
+    border-bottom: 2px solid #FFD700;
+}
+
+.nav-tabs .nav-link {
+    color: #411859;
+    border: none;
+    padding: 10px 20px;
+    font-weight: 500;
+}
+
+.nav-tabs .nav-link.active {
+    color: #FFD700;
+    background-color: #411859;
+    border: none;
+    border-bottom: 3px solid #FFD700;
+}
+
+.nav-tabs .nav-link:hover:not(.active) {
+    color: #FFD700;
+    background-color: rgba(65, 24, 89, 0.1);
+    border: none;
+}
+
+/* File upload styling */
+.form-control[type="file"] {
+    padding: 0.375rem 0.75rem;
+}
+
+/* Tab content animation */
+.tab-content {
+    padding: 15px;
+    border-left: 1px solid #dee2e6;
+    border-right: 1px solid #dee2e6;
+    border-bottom: 1px solid #dee2e6;
+    border-radius: 0 0 5px 5px;
+}
+/* Difficulty filter indicator */
+.difficulty-indicator {
+    display: inline-block;
+    padding: 0.35em 0.65em;
+    font-size: 0.75em;
+    font-weight: 700;
+    line-height: 1;
+    color: #fff;
+    text-align: center;
+    white-space: nowrap;
+    vertical-align: baseline;
+    border-radius: 0.25rem;
+}
+
+.bg-difficulty-easy {
+    background-color: #28a745;
+}
+
+.bg-difficulty-medium {
+    background-color: #ffc107;
+    color: #212529;
+}
+
+.bg-difficulty-hard {
+    background-color: #dc3545;
+}
