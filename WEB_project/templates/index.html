@@ -18,14 +18,28 @@
 <div class="row row-cols-1 row-cols-md-3 g-4">
     {% for task in tasks %}
     <div class="col">
-        <div class="card h-100">
+        <div class="card h-100 {% if task.difficulty == 'Beserk' and not beserk_unlocked %}task-locked{% endif %}">
             <div class="card-body">
-                <span class="badge bg-{% if task.difficulty == 'Easy' %}success{% elif task.difficulty == 'Medium' %}warning{% else %}danger{% endif %} mb-2">
+                <span class="badge {% if task.difficulty == 'Easy' %}bg-success
+                 {% elif task.difficulty == 'Medium' %}bg-warning
+                 {% elif task.difficulty == 'Hard' %}bg-danger
+                 {% elif task.difficulty == 'Beserk' %}bg-beserk
+                 {% endif %} mb-2">
                     {{ task.difficulty }}
                 </span>
                 <h5 class="card-title">{{ task.title }}</h5>
                 <p class="card-text">{{ task.description }}</p>
-                <a href="{{ url_for('view_task', task_id=task.id) }}" class="btn btn-primary">Solve Challenge</a>
+                
+                {% if task.difficulty == 'Beserk' and not beserk_unlocked %}
+                    <div class="task-lock-message">
+                        🔒 Complete 10 tasks (including 3 Hard) to unlock
+                    </div>
+                {% else %}
+                    <a href="{{ url_for('view_task', task_id=task.id) }}" class="btn btn-primary">
+                        Solve Challenge
+                    </a>
+                {% endif %}
+                
                 {% if logged_in and task.id in completed_tasks %}
                     <span class="badge bg-success ms-2"><i class="bi bi-check-circle"></i> Completed</span>
                 {% endif %}

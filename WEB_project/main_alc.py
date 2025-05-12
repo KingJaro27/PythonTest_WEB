@@ -256,6 +256,34 @@ def init_db():
                         },
                     ],
                 },
+                #Beserk tasks
+                {
+                    "title": "Quantum Algorithm Simulator",
+                    "description": "Implement a quantum gate simulator that can handle Hadamard and CNOT gates. Minimum 50 lines of code required.",
+                    "difficulty": "Beserk",
+                    "test_cases": [
+                        {"input": "H|0>", "output": "(0.70710678+0j)|0> + (0.70710678+0j)|1>"},
+                        {"input": "CNOT|10>", "output": "|11>"}
+                    ]
+                },
+                {
+                    "title": "Blockchain Miner",
+                    "description": "Implement a proof-of-work blockchain miner with SHA-256 hashing. Minimum 60 lines of code required.",
+                    "difficulty": "Beserk",
+                    "test_cases": [
+                        {"input": "'Hello' 3", "output": "Valid nonce found: 42"},
+                        {"input": "'Test' 4", "output": "Valid nonce found: 1234"}
+                    ]
+                },
+                {
+                    "title": "Neural Network Framework",
+                    "description": "Create a neural network from scratch with backpropagation. Minimum 70 lines of code required.",
+                    "difficulty": "Beserk",
+                    "test_cases": [
+                        {"input": "XOR_dataset", "output": "Accuracy > 85%"},
+                        {"input": "Linear_dataset", "output": "Accuracy > 90%"}
+                    ]
+                }
             ]
 
             for task_data in sample_tasks:
@@ -283,25 +311,43 @@ init_db()
 def index():
     difficulty = request.args.get("difficulty", None)
     query = Task.query
-    if difficulty in ["Easy", "Medium", "Hard"]:
-        query = query.filter_by(difficulty=difficulty)
-
-    tasks = query.all()
-
-    completed_tasks = []
+    
+    # Initialize completed tasks list
+    completed_task_ids = []
     if "user_id" in session:
         completed_progress = UserProgress.query.filter_by(
-            user_id=session["user_id"], completed=True
+            user_id=session["user_id"],
+            completed=True
         ).all()
-        completed_tasks = [progress.task_id for progress in completed_progress]
+        completed_task_ids = [progress.task_id for progress in completed_progress]
+    
+    # Check Beserk unlock status
+    beserk_unlocked = False
+    if "user_id" in session:
+        total_completed = len(completed_task_ids)
+        hard_completed = UserProgress.query.join(Task).filter(
+            UserProgress.user_id == session["user_id"],
+            UserProgress.completed == True,
+            Task.difficulty == 'Hard'
+        ).count()
+        beserk_unlocked = total_completed >= 10 and hard_completed >= 3
 
+    # Apply difficulty filter
+    if difficulty == 'Beserk':
+        query = query.filter_by(difficulty='Beserk')
+    elif difficulty in ['Easy', 'Medium', 'Hard']:
+        query = query.filter_by(difficulty=difficulty)
+    
+    tasks = query.all()
+    
     return render_template(
         "index.html",
-        logged_in="user_id" in session,
-        username=session.get("username"),
         tasks=tasks,
-        completed_tasks=completed_tasks,
+        completed_tasks=completed_task_ids,  # Pass the list of IDs
+        beserk_unlocked=beserk_unlocked,
         current_difficulty=difficulty,
+        logged_in="user_id" in session,
+        username=session.get("username")
     )
 
 
@@ -368,38 +414,77 @@ def profile():
         return redirect(url_for("login"))
 
     user = User.query.get(session["user_id"])
-    if not user:
-        flash("User not found", "danger")
-        return redirect(url_for("index"))
-
-    total_tasks = Task.query.count()
-    completed_tasks = UserProgress.query.filter_by(
-        user_id=session["user_id"], completed=True
+    
+    # Get counts for all difficulties
+    difficulties = ['Easy', 'Medium', 'Hard', 'Beserk']
+    counts = {}
+    
+    for diff in difficulties:
+        counts[f'total_{diff.lower()}'] = Task.query.filter_by(difficulty=diff).count()
+        counts[f'completed_{diff.lower()}'] = UserProgress.query.join(Task).filter(
+            UserProgress.user_id == session["user_id"],
+            UserProgress.completed == True,
+            Task.difficulty == diff
+        ).count()
+    
+    recent_tasks = db.session.query(Task, UserProgress.completion_date).join(
+        UserProgress, UserProgress.task_id == Task.id
+    ).filter(
+        UserProgress.user_id == session["user_id"],
+        UserProgress.completed == True
+    ).order_by(
+        UserProgress.completion_date.desc()
+    ).limit(5).all()
+    
+    total_easy = Task.query.filter_by(difficulty='Easy').count()
+    total_medium = Task.query.filter_by(difficulty='Medium').count()
+    total_hard = Task.query.filter_by(difficulty='Hard').count()
+    total_beserk = Task.query.filter_by(difficulty='Beserk').count()
+    
+    completed_easy = UserProgress.query.join(Task).filter(
+        UserProgress.user_id == session["user_id"],
+        UserProgress.completed == True,
+        Task.difficulty == 'Easy'
     ).count()
-
-    recent_tasks = (
-        db.session.query(
-            Task.id, Task.title, Task.difficulty, UserProgress.completion_date
-        )
-        .join(UserProgress, Task.id == UserProgress.task_id)
-        .filter(
-            UserProgress.user_id == session["user_id"], UserProgress.completed == True
-        )
-        .order_by(UserProgress.completion_date.desc())
-        .limit(5)
-        .all()
-    )
-
+    
+    completed_medium = UserProgress.query.join(Task).filter(
+        UserProgress.user_id == session["user_id"],
+        UserProgress.completed == True,
+        Task.difficulty == 'Medium'
+    ).count()
+    
+    
+    completed_hard = UserProgress.query.join(Task).filter(
+        UserProgress.user_id == session["user_id"],
+        UserProgress.completed == True,
+        Task.difficulty == 'Hard'
+    ).count()
+    
+    completed_beserk = UserProgress.query.join(Task).filter(
+        UserProgress.user_id == session["user_id"],
+        UserProgress.completed == True,
+        Task.difficulty == 'Beserk'
+    ).count()
+    
+    # Check Beserk unlock status
+    total_completed = sum(counts[f'completed_{diff.lower()}'] for diff in difficulties)
+    hard_completed = counts['completed_hard']
+    beserk_unlocked = total_completed >= 10 and hard_completed >= 3
+    total_tasks = total_easy + total_medium + total_hard + total_beserk
+    completed_tasks = completed_easy + completed_medium + completed_hard + completed_beserk
+    
     return render_template(
         "profile.html",
         user=user,
+        recent_tasks=recent_tasks,
         total_tasks=total_tasks,
         completed_tasks=completed_tasks,
-        recent_tasks=recent_tasks,
+        beserk_unlocked=beserk_unlocked,
         logged_in=True,
         username=session.get("username"),
+        **counts
     )
-
+    
 @app.route("/completed")
 def completed_tasks():
     difficulty = request.args.get('difficulty', None)
@@ -452,6 +537,26 @@ def submit_solution(task_id):
     if "user_id" not in session:
         flash("Please login to submit solutions", "danger")
         return redirect(url_for("login"))
+
+    task = Task.query.get_or_404(task_id)
+    
+    # Check if task is Beserk and unlocked
+    if task.difficulty == "Beserk":
+        # Calculate unlock status
+        total_completed = UserProgress.query.filter_by(
+            user_id=session["user_id"],
+            completed=True
+        ).count()
+        
+        hard_completed = UserProgress.query.join(Task).filter(
+            UserProgress.user_id == session["user_id"],
+            UserProgress.completed == True,
+            Task.difficulty == 'Hard'
+        ).count()
+        
+        if not (total_completed >= 10 and hard_completed >= 3):
+            flash("Complete 10 tasks (including 3 Hard) to unlock Beserk challenges!", "danger")
+            return redirect(url_for('index'))
 
     task = Task.query.get_or_404(task_id)
     test_cases = TestCase.query.filter_by(task_id=task_id).all()

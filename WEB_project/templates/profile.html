@@ -23,36 +23,79 @@
                 <h4 class="card-title">Your Progress</h4>
 
                 <div class="progress mb-3" style="height: 30px;">
+                    {% set progress_percent = (completed_tasks / total_tasks * 100) if total_tasks > 0 else 0 %}
+                    
                     <div class="progress-bar bg-success"
-                        style="width: {{ (completed_tasks / total_tasks * 100) if total_tasks > 0 else 0 }}%"
-                        aria-valuenow="{{ completed_tasks }}" aria-valuemin="0" aria-valuemax="{{ total_tasks }}">
+                        style="width: {{ progress_percent }}%"
+                        aria-valuenow="{{ completed_tasks }}" 
+                        aria-valuemin="0" 
+                        aria-valuemax="{{ total_tasks }}">
                         {{ completed_tasks }}/{{ total_tasks }} tasks completed
                     </div>
-
                 </div>
 
                 <div class="row text-center">
-                    <div class="col-md-4">
+                    <!-- Easy -->
+                    <div class="col-md-3">
                         <div class="card">
                             <div class="card-body">
                                 <h5 class="card-title">Easy</h5>
-                                <p class="card-text">{{ completed_tasks }}/{{ total_tasks }} completed</p>
+                                <p class="card-text">{{ completed_easy }}/{{ total_easy }} completed</p>
+                                <div class="progress">
+                                    <div class="progress-bar bg-success" 
+                                         style="width: {{ (completed_easy/total_easy*100) if total_easy > 0 else 0 }}%">
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
-                    <div class="col-md-4">
+                    
+                    <!-- Medium -->
+                    <div class="col-md-3">
                         <div class="card">
                             <div class="card-body">
                                 <h5 class="card-title">Medium</h5>
-                                <p class="card-text">{{ completed_tasks }}/{{ total_tasks }} completed</p>
+                                <p class="card-text">{{ completed_medium }}/{{ total_medium }} completed</p>
+                                <div class="progress">
+                                    <div class="progress-bar bg-warning" 
+                                         style="width: {{ (completed_medium/total_medium*100) if total_medium > 0 else 0 }}%">
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
-                    <div class="col-md-4">
+                    
+                    <!-- Hard -->
+                    <div class="col-md-3">
                         <div class="card">
                             <div class="card-body">
                                 <h5 class="card-title">Hard</h5>
-                                <p class="card-text">{{ completed_tasks }}/{{ total_tasks }} completed</p>
+                                <p class="card-text">{{ completed_hard }}/{{ total_hard }} completed</p>
+                                <div class="progress">
+                                    <div class="progress-bar bg-danger" 
+                                         style="width: {{ (completed_hard/total_hard*100) if total_hard > 0 else 0 }}%">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title">Beserk</h5>
+                                <p class="card-text">{{ completed_beserk }}/{{ total_beserk }} completed</p>
+                                <div class="progress">
+                                    <div class="progress-bar" 
+                                         style="background-color: #411859; width: {{ (completed_beserk/total_beserk*100) if total_beserk > 0 else 0 }}%">
+                                    </div>
+                                </div>
+                                {% if not beserk_unlocked %}
+                                <div class="alert alert-dark mt-2 p-1">
+                                    <small>Unlock by completing:<br>
+                                    ✓ 10 total tasks<br>
+                                    ✓ 3 Hard tasks</small>
+                                </div>
+                                {% endif %}
                             </div>
                         </div>
                     </div>
@@ -60,24 +103,37 @@
             </div>
         </div>
 
+        <!-- Replace the Recent Tasks card with this -->
         <div class="card">
             <div class="card-body">
-                <h4 class="card-title">Recently Completed</h4>
+                <h4 class="card-title">Recent Activity</h4>
                 {% if recent_tasks %}
-                <ul class="list-group">
-                    {% for task in recent_tasks %}
-                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                        <div>
-                            <h6>{{ task['title'] }}</h6>
-                            <span
-                                class="badge bg-{% if task['difficulty'] == 'Easy' %}success{% elif task['difficulty'] == 'Medium' %}warning{% else %}danger{% endif %}">
-                                {{ task['difficulty'] }}
-                            </span>
-                        </div>
-                        <small class="text-muted">{{ task['completion_date'] }}</small>
-                    </li>
-                    {% endfor %}
-                </ul>
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Task</th>
+                                <th>Difficulty</th>
+                                <th>Completed</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for task, completion_date in recent_tasks %}
+                            <tr>
+                                <td>{{ task.title }}</td>
+                                <td>
+                                    <span class="badge bg-{% if task.difficulty == 'Easy' %}success{% elif task.difficulty == 'Medium' %}warning{% elif task.difficulty == 'Hard' %}danger{% else %}dark{% endif %}">
+                                        {{ task.difficulty }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <small class="text-muted">{{ completion_date.strftime('%b %d, %Y %I:%M %p') }}</small>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
                 {% else %}
                 <div class="alert alert-info">
                     You haven't completed any tasks yet. Start coding!

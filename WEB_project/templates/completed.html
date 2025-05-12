@@ -19,7 +19,11 @@
     <div class="col">
         <div class="card h-100">
             <div class="card-body">
-                <span class="badge bg-{% if task.difficulty == 'Easy' %}success{% elif task.difficulty == 'Medium' %}warning{% else %}danger{% endif %} mb-2">
+                <span class="badge {% if task.difficulty == 'Easy' %}bg-success
+                 {% elif task.difficulty == 'Medium' %}bg-warning
+                 {% elif task.difficulty == 'Hard' %}bg-danger
+                 {% elif task.difficulty == 'Beserk' %}bg-beserk
+                 {% endif %} mb-2">
                     {{ task.difficulty }}
                 </span>
                 <h5 class="card-title">{{ task.title }}</h5>
