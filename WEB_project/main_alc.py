@@ -14,7 +14,6 @@ app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 db = SQLAlchemy(app)
 
 
-# Database Models
 class User(db.Model):
     __tablename__ = "users"
     id = db.Column(db.Integer, primary_key=True)
@@ -57,7 +56,7 @@ def init_db():
 
         if Task.query.count() == 0:
             sample_tasks = [
-                # ======== EASY TASKS ========
+                #EASY TASKS
                 {
                     "title": "Sum Two Numbers",
                     "description": "Write a function that takes two numbers from input and returns their sum.",
@@ -117,7 +116,7 @@ def init_db():
                         {"input": "[-1, 0, 1]", "output": "0.0"},
                     ],
                 },
-                # ======== MEDIUM TASKS ========
+                #MEDIUM TASKS
                 {
                     "title": "Factorial Calculator",
                     "description": "Write a function that calculates the factorial of a number.",
@@ -181,7 +180,7 @@ def init_db():
                         {"input": "[1, 1, 2, 3], [1, 1, 1, 4]", "output": "[1]"},
                     ],
                 },
-                # ======== HARD TASKS ========
+                #HARD TASKS
                 {
                     "title": "Binary Search",
                     "description": "Implement the binary search algorithm to find an element in a sorted list.",
@@ -266,7 +265,7 @@ def init_db():
                     difficulty=task_data["difficulty"],
                 )
                 db.session.add(task)
-                db.session.flush()  # To get the task.id
+                db.session.flush()
 
                 for case in task_data["test_cases"]:
                     test_case = TestCase(
@@ -283,11 +282,7 @@ init_db()
 @app.route("/")
 def index():
     difficulty = request.args.get("difficulty", None)
-
-    # Base query
     query = Task.query
-
-    # Filter by difficulty if specified
     if difficulty in ["Easy", "Medium", "Hard"]:
         query = query.filter_by(difficulty=difficulty)
 
@@ -306,7 +301,7 @@ def index():
         username=session.get("username"),
         tasks=tasks,
         completed_tasks=completed_tasks,
-        current_difficulty=difficulty,  # Pass the current filter to template
+        current_difficulty=difficulty,
     )
 
 
@@ -326,8 +321,7 @@ def register():
                 email=email,
             )
             db.session.add(new_user)
-            db.session.flush()  # To get the new_user.id
-            # Initialize progress for all tasks
+            db.session.flush()
             tasks = Task.query.all()
             for task in tasks:
                 progress = UserProgress(user_id=new_user.id, task_id=task.id)
@@ -414,13 +408,11 @@ def completed_tasks():
         flash("Please login to view completed tasks", "danger")
         return redirect(url_for("login"))
     
-    # Base query for completed tasks
     query = db.session.query(Task).join(UserProgress).filter(
         UserProgress.user_id == session["user_id"],
         UserProgress.completed == True
     )
     
-    # Filter by difficulty if specified
     if difficulty in ['Easy', 'Medium', 'Hard']:
         query = query.filter(Task.difficulty == difficulty)
     
@@ -464,38 +456,29 @@ def submit_solution(task_id):
     task = Task.query.get_or_404(task_id)
     test_cases = TestCase.query.filter_by(task_id=task_id).all()
 
-    # Initialize tester and add test cases
     tester = PythonTester()
     for case in test_cases:
         tester.add_test_case(case.input, case.output)
 
-    # Check if a file was uploaded
     if "pythonFile" in request.files:
         file = request.files["pythonFile"]
         if file and file.filename.endswith(".py"):
-            # Save the file temporarily
             temp_path = os.path.join(tempfile.gettempdir(), file.filename)
             file.save(temp_path)
-
-            # Read the file content
             with open(temp_path, "r") as f:
                 user_code = f.read()
 
-            # Clean up
             os.remove(temp_path)
         else:
             flash("Please upload a valid Python (.py) file", "danger")
             return redirect(url_for("view_task", task_id=task_id))
     else:
-        # Get code from textarea
         user_code = request.form["code"]
 
-    # Test the code
     all_passed = tester.test_python_code(user_code)
     test_results = tester.get_test_results()
 
     if all_passed:
-        # Update user progress if all tests passed
         progress = UserProgress.query.filter_by(
             user_id=session["user_id"], task_id=task_id
         ).first()

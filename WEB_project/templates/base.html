@@ -20,7 +20,7 @@
                             <i class="bi bi-person-fill"></i> {{ username }}
                         </button>
                         <ul class="dropdown-menu dropdown-menu-end">
-                            <li><a class="dropdown-item" href="{{ url_for('profile') }}">Profile</a></li>  <!-- Fixed this line -->
+                            <li><a class="dropdown-item" href="{{ url_for('profile') }}">Profile</a></li>
                             <li><a class="dropdown-item" href="#">My Progress</a></li>
                             <li><hr class="dropdown-divider"></li>
                             <li><a class="dropdown-item" href="{{ url_for('logout') }}">Logout</a></li>
@@ -43,7 +43,6 @@
                             <a class="nav-link" href="{{ url_for('completed_tasks') }}">Completed Tasks</a>
                         </li>
                         {% endif %}
-                        <!-- In your navbar section -->
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle" href="#" id="difficultyDropdown" role="button" data-bs-toggle="dropdown">
                                 Difficulty

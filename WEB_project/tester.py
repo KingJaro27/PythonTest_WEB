@@ -66,26 +66,22 @@ class PythonTester:
                 result_dict['actual'] = result['actual']
                 result_dict['diff'] = result.get('diff', '')
             else:
-                result_dict['actual'] = test.expected_output  # For passed tests
+                result_dict['actual'] = test.expected_output 
                 
             results.append(result_dict)
         
         return results
 
     def test_python_code(self, code: str) -> bool:
-        """Test Python code directly without needing a file"""
-        self.results = []  # Clear previous results
+        self.results = [] 
         
-        # Create a temporary file with the code
         with tempfile.NamedTemporaryFile(suffix='.py', delete=False) as temp:
             temp.write(code.encode('utf-8'))
             temp_path = temp.name
         
         try:
-            # Run the tests
             all_passed = self.run_tests(temp_path)
         finally:
-            # Clean up the temporary file
             os.unlink(temp_path)
         
         return all_passed
@@ -183,7 +179,6 @@ class PythonTester:
 
     def normalize_output(self, output: str) -> str:
         """Нормализация вывода для сравнения"""
-        # Удаление лишних пробелов и пустых строк в конце
         lines = [line.rstrip() for line in output.splitlines()]
         lines = [line for line in lines if line != ""]
         return "\n".join(lines)
@@ -206,8 +201,7 @@ class PythonTester:
         return "".join(diff)
 
     def run_tests(self, program_path: str) -> bool:
-        """Run all test cases and return whether all passed"""
-        self.results = []  # Clear previous results
+        self.results = [] 
         all_passed = True
         
         for i, test in enumerate(self.test_cases, 1):

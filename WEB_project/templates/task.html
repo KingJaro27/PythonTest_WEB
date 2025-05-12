@@ -38,7 +38,6 @@
             <div class="card-body">
                 <h4 class="card-title">Submit Your Solution</h4>
                 
-                <!-- Tab navigation -->
                 <ul class="nav nav-tabs mb-3" id="solutionTabs" role="tablist">
                     <li class="nav-item" role="presentation">
                         <button class="nav-link active" id="code-tab" data-bs-toggle="tab" data-bs-target="#code" type="button" role="tab">Write Code</button>
@@ -48,9 +47,7 @@
                     </li>
                 </ul>
                 
-                <!-- Tab content -->
                 <div class="tab-content" id="solutionTabsContent">
-                    <!-- Textarea for direct code input -->
                     <div class="tab-pane fade show active" id="code" role="tabpanel">
                         <form method="POST" action="{{ url_for('submit_solution', task_id=task.id) }}">
                             <div class="mb-3">
@@ -61,7 +58,6 @@
                         </form>
                     </div>
                     
-                    <!-- File upload option -->
                     <div class="tab-pane fade" id="upload" role="tabpanel">
                         <form method="POST" action="{{ url_for('submit_solution', task_id=task.id) }}" enctype="multipart/form-data">
                             <div class="mb-3">
