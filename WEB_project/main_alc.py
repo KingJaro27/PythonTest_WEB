@@ -311,8 +311,6 @@ init_db()
 def index():
     difficulty = request.args.get("difficulty", None)
     query = Task.query
-    
-    # Initialize completed tasks list
     completed_task_ids = []
     if "user_id" in session:
         completed_progress = UserProgress.query.filter_by(
@@ -321,7 +319,6 @@ def index():
         ).all()
         completed_task_ids = [progress.task_id for progress in completed_progress]
     
-    # Check Beserk unlock status
     beserk_unlocked = False
     if "user_id" in session:
         total_completed = len(completed_task_ids)
@@ -332,7 +329,6 @@ def index():
         ).count()
         beserk_unlocked = total_completed >= 10 and hard_completed >= 3
 
-    # Apply difficulty filter
     if difficulty == 'Beserk':
         query = query.filter_by(difficulty='Beserk')
     elif difficulty in ['Easy', 'Medium', 'Hard']:
@@ -343,7 +339,7 @@ def index():
     return render_template(
         "index.html",
         tasks=tasks,
-        completed_tasks=completed_task_ids,  # Pass the list of IDs
+        completed_tasks=completed_task_ids,
         beserk_unlocked=beserk_unlocked,
         current_difficulty=difficulty,
         logged_in="user_id" in session,
@@ -415,7 +411,6 @@ def profile():
 
     user = User.query.get(session["user_id"])
     
-    # Get counts for all difficulties
     difficulties = ['Easy', 'Medium', 'Hard', 'Beserk']
     counts = {}
     
@@ -466,7 +461,6 @@ def profile():
         Task.difficulty == 'Beserk'
     ).count()
     
-    # Check Beserk unlock status
     total_completed = sum(counts[f'completed_{diff.lower()}'] for diff in difficulties)
     hard_completed = counts['completed_hard']
     beserk_unlocked = total_completed >= 10 and hard_completed >= 3
@@ -540,9 +534,7 @@ def submit_solution(task_id):
 
     task = Task.query.get_or_404(task_id)
     
-    # Check if task is Beserk and unlocked
     if task.difficulty == "Beserk":
-        # Calculate unlock status
         total_completed = UserProgress.query.filter_by(
             user_id=session["user_id"],
             completed=True
