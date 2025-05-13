@@ -20,6 +20,7 @@ class User(db.Model):
     username = db.Column(db.String(80), unique=True, nullable=False)
     password_hash = db.Column(db.String(120), nullable=False)
     email = db.Column(db.String(120))
+    last_login = db.Column(db.DateTime)
     join_date = db.Column(db.DateTime, default=datetime.utcnow)
     progress = db.relationship("UserProgress", backref="user", lazy=True)
 
@@ -386,6 +387,10 @@ def login():
         user = User.query.filter_by(username=username).first()
 
         if user and check_password_hash(user.password_hash, password):
+            
+            user.last_login = datetime.utcnow()
+            db.session.commit()
+            
             session["user_id"] = user.id
             session["username"] = user.username
             flash("Logged in successfully!", "success")
@@ -525,6 +530,77 @@ def view_task(task_id):
         completed=completed,
     )
 
+@app.route("/ranking")
+def ranking():
+    if "user_id" not in session:
+        flash("Please login to view the ranking", "danger")
+        return redirect(url_for("login"))
+
+    top_users = db.session.query(
+        User.username,
+        db.func.count(UserProgress.task_id).label('total_completed'),
+        db.func.max(User.last_login).label('last_login'),
+        db.func.sum(db.case((Task.difficulty == 'Beserk', 1), else_=0)).label('beserk_completed')
+    ).join(
+        UserProgress, User.id == UserProgress.user_id
+    ).join(
+        Task, UserProgress.task_id == Task.id
+    ).filter(
+        UserProgress.completed == True
+    ).group_by(
+        User.id
+    ).order_by(
+        db.desc('total_completed'),
+        db.desc('beserk_completed')
+    ).limit(10).all()
+
+    current_user_stats = db.session.query(
+        User.username,
+        db.func.count(UserProgress.task_id).label('total_completed'),
+        db.func.sum(db.case((Task.difficulty == 'Beserk', 1), else_=0)).label('beserk_completed')
+    ).join(
+        UserProgress, User.id == UserProgress.user_id
+    ).join(
+        Task, UserProgress.task_id == Task.id
+    ).filter(
+        UserProgress.user_id == session["user_id"],
+        UserProgress.completed == True
+    ).group_by(
+        User.id
+    ).first()
+
+    user_rank = None
+    if current_user_stats:
+        all_users_ranked = db.session.query(
+            User.id,
+            db.func.count(UserProgress.task_id).label('total_completed'),
+            db.func.sum(db.case((Task.difficulty == 'Beserk', 1), else_=0)).label('beserk_completed')
+        ).join(
+            UserProgress, User.id == UserProgress.user_id
+        ).join(
+            Task, UserProgress.task_id == Task.id
+        ).filter(
+            UserProgress.completed == True
+        ).group_by(
+            User.id
+        ).order_by(
+            db.desc('total_completed'),
+            db.desc('beserk_completed')
+        ).all()
+
+        for idx, (user_id, total, beserk) in enumerate(all_users_ranked, 1):
+            if user_id == session["user_id"]:
+                user_rank = idx
+                break
+
+    return render_template(
+        "ranking.html",
+        top_users=top_users,
+        current_user_stats=current_user_stats,
+        user_rank=user_rank,
+        logged_in=True,
+        username=session.get("username")
+    )
 
 @app.route("/submit_solution/<int:task_id>", methods=["POST"])
 def submit_solution(task_id):

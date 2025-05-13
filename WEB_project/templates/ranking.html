@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <h2 class="mb-4">Top Coders Ranking</h2>
+    
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Rank</th>
+                            <th>Username</th>
+                            <th>Total Completed</th>
+                            <th>Beserk Completed</th>
+                            <th>Last Active</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for user in top_users %}
+                        <tr class="{% if user.username == username %}table-primary{% endif %}">
+                            <td>{{ loop.index }}</td>
+                            <td>{{ user.username }}</td>
+                            <td>{{ user.total_completed }}</td>
+                            <td>{{ user.beserk_completed }}</td>
+                            <td>{{ user.last_login.strftime('%Y-%m-%d') if user.last_login else 'Never' }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    {% if current_user_stats %}
+    <div class="card">
+        <div class="card-body">
+            <h4 class="card-title">Your Ranking</h4>
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h5 class="mb-1">
+                        {% if user_rank <= 10 %}
+                        #{{ user_rank }} - {{ username }}
+                        {% else %}
+                        #{{ user_rank }}+ - {{ username }}
+                        {% endif %}
+                    </h5>
+                    <p class="mb-0">
+                        Completed {{ current_user_stats.total_completed }} tasks
+                        ({{ current_user_stats.beserk_completed }} Beserk)
+                    </p>
+                </div>
+                
+                {% if user_rank > 10 %}
+                <div class="alert alert-info">
+                    <small>
+                        <strong>Tips to improve your rank:</strong><br>
+                        - Complete more Beserk challenges (worth more points)<br>
+                        - Work on Hard tasks to unlock Beserk mode<br>
+                        - Be consistent - complete at least 1 task per day
+                    </small>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
