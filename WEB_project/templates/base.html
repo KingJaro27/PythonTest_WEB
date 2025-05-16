@@ -3,16 +3,31 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="{{ url_for('static', filename='images/logo.jpg') }}" type="image/jpg">
     <title>CodeMaster - Learn Python</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
-<body>
+<body data-theme="{{ session.get('theme', 'light') }}">
     <header>
         <div class="container-fluid px-0">
             <div class="d-flex justify-content-between align-items-center py-3">
+                <img src="{{ url_for('static', filename='images/logo.jpg') }}"
+                 alt="Logo"
+                 height="70"
+                 class="me-2"
+                 style="margin: 0; padding: 0; border: none; display: block;">
                 <h1 class="m-0"><a href="/" class="text-decoration-none text-dark">CodeMaster</a></h1>
+                <form method="POST" action="{{ url_for('toggle_theme') }}" class="d-inline">
+                    <button type="submit" class="btn btn-sm btn-outline-secondary ms-2">
+                        {% if session.get('theme') == 'dark' %}
+                            <i class="bi bi-sun-fill"></i> Light Mode
+                        {% else %}
+                            <i class="bi bi-moon-fill"></i> Dark Mode
+                        {% endif %}
+                    </button>
+                </form>
                 <div>
                     {% if logged_in %}
                     <div class="dropdown">
@@ -31,7 +46,7 @@
                 {% endif %}
                 </div>
             </div>
-            
+
             <nav class="navbar navbar-expand navbar-dark bg-dark mb-4 container-fluid px-0">
                 <div class="container-fluid">
                     <ul class="navbar-nav">

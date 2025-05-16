@@ -58,7 +58,7 @@ class PythonTester:
                 'expected': test.expected_output,
                 'status': result.get('status', 'Not run')
             }
-            
+
             if 'error' in result:
                 result_dict['status'] = 'Error'
                 result_dict['actual'] = result['error']
@@ -66,25 +66,71 @@ class PythonTester:
                 result_dict['actual'] = result['actual']
                 result_dict['diff'] = result.get('diff', '')
             else:
-                result_dict['actual'] = test.expected_output 
-                
+                result_dict['actual'] = test.expected_output
+
             results.append(result_dict)
-        
+
         return results
 
     def test_python_code(self, code: str) -> bool:
-        self.results = [] 
-        
+        self.results = []
+        all_passed = True
+
         with tempfile.NamedTemporaryFile(suffix='.py', delete=False) as temp:
             temp.write(code.encode('utf-8'))
             temp_path = temp.name
-        
+
         try:
-            all_passed = self.run_tests(temp_path)
+            for i, test in enumerate(self.test_cases, 1):
+                result = {
+                    'test_case': i,
+                    'input': test.input_data,
+                    'expected': test.expected_output,
+                    'passed': False,
+                    'actual': '',
+                    'error': None
+                }
+
+                try:
+                    process = subprocess.run(
+                        ['python', temp_path],
+                        input=test.input_data.encode(),
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.PIPE,
+                        timeout=2.0
+                    )
+
+                    if process.returncode != 0:
+                        result['error'] = process.stderr.decode().strip()
+                    else:
+                        actual_output = process.stdout.decode().strip()
+                        result['actual'] = actual_output
+                        result['passed'] = (actual_output == test.expected_output)
+
+                        if not result['passed']:
+                            # Generate diff for failed tests
+                            d = Differ()
+                            diff = list(d.compare(
+                                test.expected_output.splitlines(),
+                                actual_output.splitlines()
+                            ))
+                            result['diff'] = '\n'.join(diff)
+
+                except subprocess.TimeoutExpired:
+                    result['error'] = "Time limit exceeded"
+                except Exception as e:
+                    result['error'] = str(e)
+
+                self.results.append(result)
+                if not result['passed']:
+                    all_passed = False
+
+            return all_passed
         finally:
             os.unlink(temp_path)
-        
-        return all_passed
+
+    def get_test_results(self):
+        return self.results
 
     def detect_language(self, filename: str) -> Optional[str]:
         """Определение языка программирования по расширению файла"""
@@ -201,20 +247,20 @@ class PythonTester:
         return "".join(diff)
 
     def run_tests(self, program_path: str) -> bool:
-        self.results = [] 
+        self.results = []
         all_passed = True
-        
+
         for i, test in enumerate(self.test_cases, 1):
             result = {
                 'test_case': i,
                 'input': test.input_data,
                 'expected': test.expected_output
             }
-            
+
             actual, error, exec_time = self.run_program(
                 program_path, test.input_data, test.time_limit
             )
-            
+
             if error:
                 result.update({
                     'status': 'Error',
@@ -238,9 +284,9 @@ class PythonTester:
                         'actual': actual,
                         'time': exec_time
                     })
-            
+
             self.results.append(result)
-        
+
         return all_passed
 
     def generate_report(self, filename: str = "test_report.txt"):

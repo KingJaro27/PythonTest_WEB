@@ -60,7 +60,7 @@
 body {
     margin: 0;
     padding: 0;
-    overflow-x: hidden; 
+    overflow-x: hidden;
 }
 
 /* Full width sections */
@@ -166,4 +166,120 @@ body {
     pointer-events: none;
     background-color: #6c757d;
     border-color: #6c757d;
+}
+
+/* Light theme (default) */
+:root {
+    --bg-color: #ffffff;
+    --text-color: #212529;
+    --card-bg: #ffffff;
+    --navbar-bg: #343a40;
+    --border-color: #dee2e6;
+}
+
+/* Dark theme */
+[data-theme="dark"] {
+    --bg-color: #121212;
+    --text-color: #f8f9fa;
+    --card-bg: #1e1e1e;
+    --navbar-bg: #1a1a1a;
+    --border-color: #444;
+}
+
+[data-theme="dark"] {
+    /* Nuclear color flip */
+    --bg-color: #121212;
+    --text-color: #ffffff; /* Pure white (not gray) */
+    --card-bg: #1e1e1e;
+    --navbar-bg: #000000;
+    --border-color: #333333;
+}
+
+body {
+    background-color: var(--bg-color);
+    color: var(--text-color);
+}
+
+/* Force ALL backgrounds dark */
+[data-theme="dark"] body,
+[data-theme="dark"] .card,
+[data-theme="dark"] .dropdown-menu,
+[data-theme="dark"] .modal-content,
+[data-theme="dark"] .alert,
+[data-theme="dark"] .list-group-item {
+    background-color: var(--bg-color) !important;
+    color: var(--text-color) !important;
+    border-color: var(--border-color) !important;
+}
+
+/* Force ALL text white */
+[data-theme="dark"] *:not(.btn):not(.badge):not(input):not(textarea) {
+    color: var(--text-color) !important;
+}
+
+/* Special cases */
+[data-theme="dark"] .btn-primary {
+    color: white !important; /* Keep button text white */
+}
+
+[data-theme="dark"] .badge {
+    color: white !important; /* Keep badge text white */
+}
+
+[data-theme="dark"] input,
+[data-theme="dark"] textarea {
+    background-color: #2d2d2d !important;
+    color: white !important;
+    border-color: #444 !important;
+}
+
+/* Fix code blocks */
+[data-theme="dark"] code {
+    background-color: #2d2d2d !important;
+    color: #f8f9fa !important;
+}
+
+/* Fix links */
+[data-theme="dark"] a {
+    color: #4dabf7 !important;
+}
+/* Submission History Styles */
+.modal pre {
+    background-color: #f8f9fa;
+    padding: 1rem;
+    border-radius: 0.25rem;
+}
+
+[data-theme="dark"] .modal pre {
+    background-color: #2d2d2d;
+    color: #f8f9fa;
+}
+
+.submission-time {
+    font-family: monospace;
+}
+
+
+/* Custom styling for the submission details card */
+#submissionDetailsCard {
+    transition: all 0.3s ease;
+    border: 1px solid rgba(0,0,0,0.125);
+}
+
+#submissionDetailsCard:hover {
+    box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.15);
+    transform: translateY(-2px);
+}
+
+pre {
+    max-height: 400px;
+    overflow-y: auto;
+    background-color: #f8f9fa;
+    padding: 1rem;
+    border-radius: 0.25rem;
+}
+
+[data-theme="dark"] pre {
+    background-color: #2d2d2d;
+    color: #f8f9fa;
 }
